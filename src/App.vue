@@ -20,9 +20,8 @@
 </style>
 <script>
     import NavigationBar from "@/components/HeaderNavBar";
-    import FooterNavBar from "@/FooterNavBar";
 
     export default {
-        components: {FooterNavBar, NavigationBar}
+        components: {NavigationBar}
     }
 </script>
