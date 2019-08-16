@@ -36,7 +36,7 @@
                                     </b-col>
                                 </b-row>
                             </b-list-group-item>
-                            <b-button type="submit" variant="success">Submit</b-button>
+<!--                            <b-button type="submit" variant="success">Submit</b-button>-->
                             <b-dropdown class="float-right" right split @click="add_query"
                                         :text="'Add ' + active_query_type + ' query'" variant="primary">
                                 <b-dropdown-item @click="active_query_type = item"
@@ -81,7 +81,7 @@
             return {
                 data_model: null,
                 debug: false,
-                data: [],
+                data: null,
                 form: {
                     queries: []
                 },
@@ -211,7 +211,7 @@
             remove_query: function (index) {
                 this.form.queries.splice(index, 1);
                 if (this.form.queries.length === 0) {
-                    this.data = []
+                    this.data = null
                 }
             },
 
