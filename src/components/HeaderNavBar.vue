@@ -1,7 +1,7 @@
 <template>
     <b-navbar toggleable="lg" type="light">
-        <b-navbar-brand href="#">Hodejegeren</b-navbar-brand>
-
+        <b-navbar-brand href="#">
+            <img class="d-inline-block" alt="Vue logo" src="../assets/Logo-syntetiske_testdata.png">Hodejegeren</b-navbar-brand>
         <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
         <b-collapse id="nav-collapse" is-nav>

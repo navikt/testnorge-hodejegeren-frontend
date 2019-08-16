@@ -1,6 +1,5 @@
 <template>
     <b-container class="advancedSearch">
-        <img alt="Vue logo" src="../assets/Logo-syntetiske_testdata.png">
         <div v-b-toggle="'search_bar'" style="cursor: pointer">
             <h4>Search</h4>
         </div>

@@ -5,6 +5,7 @@
             <router-view>
             </router-view>
         </b-container>
+        <FooterNavBar></FooterNavBar>
     </div>
 </template>
 
@@ -15,13 +16,14 @@
         -moz-osx-font-smoothing: grayscale;
         /*text-align: center;*/
         color: #2c3e50;
-        margin-top: 60px;
+        /*margin-top: 60px;*/
     }
 </style>
 <script>
-    import Login from "@/components/login/Login";
-    import NavigationBar from "@/components/NavigationBar";
+    import NavigationBar from "@/components/HeaderNavBar";
+    import FooterNavBar from "@/FooterNavBar";
+
     export default {
-        components: {NavigationBar, Login}
+        components: {FooterNavBar, NavigationBar}
     }
 </script>
