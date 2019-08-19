@@ -74,6 +74,9 @@
                 }
             },
             adresse: function () {
+                if (!this.person.boadresse || this.person.boadresse.length === 0) {
+                    return "INGEN ADRESSE"
+                }
                 let a = this.person.boadresse[0];
                 let adresse = a.boAdresse;
                 if (adresse.trim() === "") {

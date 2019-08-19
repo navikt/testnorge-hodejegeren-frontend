@@ -1,18 +1,18 @@
 <template>
     <b-container class="advancedSearch">
-        <div v-b-toggle="'search_bar'" style="cursor: pointer">
-            <h4>Search</h4>
+        <div v-b-toggle="'search_bar'">
+            <h4 style="cursor: pointer">Search</h4>
         </div>
         <b-collapse v-if="loggedIn" id="search_bar" role="tabpanel" visible>
             <b-row>
-                <b-col :cols="debug ? 8 : 12">
+                <b-col :cols="show_debug ? 8 : 12">
                     <b-list-group>
                         <b-form @submit="onSubmit" @input="make_query(query_statement)">
                             <b-list-group-item v-for="(query, index) in form.queries" :key="index.toString()">
                                 <b-row>
                                     <b-col cols="10">
                                         <div class="pointer" v-b-toggle="'item-' + index.toString()">
-                                            <h4>{{query.display_name}}</h4>
+                                            <h4 style="cursor: pointer">{{query.display_name}}</h4>
                                         </div>
                                         <b-collapse :id="'item-' + index.toString()" role="tabpanel" visible>
                                             <TextSearch v-if="query.field_type === 'text'" :query="query"
@@ -36,7 +36,7 @@
                                     </b-col>
                                 </b-row>
                             </b-list-group-item>
-<!--                            <b-button type="submit" variant="success">Submit</b-button>-->
+                            <!--                            <b-button type="submit" variant="success">Submit</b-button>-->
                             <b-dropdown class="float-right" right split @click="add_query"
                                         :text="'Add ' + active_query_type + ' query'" variant="primary">
                                 <b-dropdown-item @click="active_query_type = item"
@@ -47,20 +47,28 @@
                         </b-form>
                     </b-list-group>
                 </b-col>
-                <b-col v-if="debug">
-                    <div class="border border-secondary">
-                        <br>
-                        <pre>{{JSON.stringify(query_statement, null, 4)}}</pre>
+                <b-col v-if="show_debug">
+                    <div v-if="debug.show_query">
+                        <div class="border border-secondary">
+                            <br>
+                            <pre>{{JSON.stringify(query_statement, null, 4)}}</pre>
+                        </div>
+                        <div class="border border-secondary" v-if="current_error !== null">
+                            <p>
+                                {{error_texts[current_error.response.status]}}
+                            </p>
+                        </div>
                     </div>
-                    <div class="border border-secondary" v-if="current_error !== null">
-                        <p>
-                            {{error_texts[current_error.response.status]}}
-                        </p>
+                    <div v-else>
+                        <div class="border border-secondary">
+                            <br>
+                            <pre>{{JSON.stringify(data_model, null, 4)}}</pre>
+                        </div>
                     </div>
                 </b-col>
             </b-row>
         </b-collapse>
-        <Result  v-if="loggedIn" :data="data"></Result>
+        <Result v-if="loggedIn" :data="data"></Result>
     </b-container>
 </template>
 
@@ -80,7 +88,10 @@
         data() {
             return {
                 data_model: null,
-                debug: false,
+                debug: {
+                    show_query: false,
+                    show_data_model: true,
+                },
                 data: null,
                 form: {
                     queries: []
@@ -143,6 +154,10 @@
                 auth: 'loginInfo',
                 loggedIn: 'isLoggedIn'
             }),
+
+            show_debug: function () {
+                return this.debug.show_query || this.debug.show_data_model
+            },
 
             query_statement: function () {
                 let q = {};
