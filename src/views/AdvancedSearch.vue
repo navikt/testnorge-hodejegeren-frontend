@@ -48,22 +48,16 @@
                     </b-list-group>
                 </b-col>
                 <b-col v-if="show_debug">
-                    <div v-if="debug.show_query">
-                        <div class="border border-secondary">
-                            <br>
-                            <pre>{{JSON.stringify(query_statement, null, 4)}}</pre>
-                        </div>
-                        <div class="border border-secondary" v-if="current_error !== null">
-                            <p>
-                                {{error_texts[current_error.response.status]}}
-                            </p>
-                        </div>
+                    <div class="border border-secondary" v-if="current_error !== null">
+                        <p>
+                            {{error_texts[current_error.response.status]}}
+                        </p>
                     </div>
-                    <div v-else>
-                        <div class="border border-secondary">
-                            <br>
-                            <pre>{{JSON.stringify(data_model, null, 4)}}</pre>
-                        </div>
+                    <div class="border border-secondary">
+                        <br>
+                        <pre v-if="debug.show_query">{{JSON.stringify(query_statement, null, 4)}}</pre>
+                        <pre v-else-if="debug.show_data_model">{{JSON.stringify(data_model, null, 4)}}</pre>
+                        <pre v-else-if="debug.show_field_output">{{JSON.stringify(possible_field_names, null, 4)}}</pre>
                     </div>
                 </b-col>
             </b-row>
@@ -89,8 +83,9 @@
             return {
                 data_model: null,
                 debug: {
-                    show_query: false,
-                    show_data_model: true,
+                    show_query: true,
+                    show_data_model: false,
+                    show_field_output: true
                 },
                 data: null,
                 form: {
@@ -156,21 +151,63 @@
             }),
 
             show_debug: function () {
-                return this.debug.show_query || this.debug.show_data_model
+                return this.debug.show_query || this.debug.show_data_model || this.debug.show_field_output
+            },
+
+            possible_field_names: function () {
+                if (!this.data_model) {
+                    return {}
+                }
+
+                let result = {};
+
+                Object.keys(this.data_model).forEach(k => {
+                    result[k] = {};
+                    let data_begins = this.data_model[k]['mappings']['_doc']['properties'];
+                    switch (k.toLowerCase()) {
+                        case 'skd':
+                            result[k]['dokument'] = data_begins['dokument']['properties'];
+                            result[k]['relasjon'] = data_begins['relasjon']['properties'];
+                            // eslint-disable-next-line no-case-declarations
+                            let person = data_begins['person']['properties'];
+                            result[k]['person'] = {};
+                            Object.keys(person).forEach(pk => {
+                                result[k]['person'][pk] = person[pk]['properties']
+                            });
+                            break;
+                        case 'relasjon':
+                            result[k] = data_begins['relasjoner']['properties'];
+                            break;
+                        case 'person':
+                        case 'dokument':
+                        case 'inst':
+                        case 'sam':
+                            result[k] = data_begins;
+                            break;
+
+                    }
+                });
+                return result;
             },
 
             query_statement: function () {
-                let q = {};
+                let q = {
+                    'bool': {
+                        'must': [
+
+                        ]
+                    }
+                };
 
                 this.form.queries.forEach(function (query) {
                     let field_name = query.field_name;
                     let query_type = query.type.toLowerCase();
                     let content = query.content;
-                    q = {
+                    q['bool']['must'].push({
                         [query_type]: {
                             [field_name]: content
                         }
-                    }
+                    })
                 });
 
                 return q
