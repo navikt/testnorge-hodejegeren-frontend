@@ -16,16 +16,16 @@
                                         </div>
                                         <b-collapse :id="'item-' + index.toString()" role="tabpanel" visible>
                                             <TextSearch v-if="query.field_type === 'text'" :query="query"
-                                                        :index="index.toString()">
+                                                        :index="index.toString()" :groups="text_fields">
                                             </TextSearch>
                                             <ExistsSearch v-if="query.field_type === 'exists'" :query="query"
-                                                          :index="index.toString()">
+                                                          :index="index.toString()" :groups="all_fields">
                                             </ExistsSearch>
                                             <TermsSearch v-if="query.field_type === 'terms'" :query="query"
-                                                         :index="index.toString()">
+                                                         :index="index.toString()" :groups="text_fields">
                                             </TermsSearch>
                                             <RangeSearch v-if="query.field_type === 'range'" :query="query"
-                                                         :index="index.toString()">
+                                                         :index="index.toString()" :groups="date_fields">
                                             </RangeSearch>
                                         </b-collapse>
                                     </b-col>
@@ -57,7 +57,7 @@
                         <br>
                         <pre v-if="debug.show_query">{{JSON.stringify(query_statement, null, 4)}}</pre>
                         <pre v-else-if="debug.show_data_model">{{JSON.stringify(data_model, null, 4)}}</pre>
-                        <pre v-else-if="debug.show_field_output">{{JSON.stringify(possible_field_names, null, 4)}}</pre>
+                        <pre v-else-if="debug.show_field_output">{{JSON.stringify(text_fields, null, 4)}}</pre>
                     </div>
                 </b-col>
             </b-row>
@@ -158,44 +158,25 @@
                 if (!this.data_model) {
                     return {}
                 }
+                return this.remap_fields();
+            },
 
-                let result = {};
+            text_fields: function () {
+                return this.get_fields('text')
+            },
 
-                Object.keys(this.data_model).forEach(k => {
-                    result[k] = {};
-                    let data_begins = this.data_model[k]['mappings']['_doc']['properties'];
-                    switch (k.toLowerCase()) {
-                        case 'skd':
-                            result[k]['dokument'] = data_begins['dokument']['properties'];
-                            result[k]['relasjon'] = data_begins['relasjon']['properties'];
-                            // eslint-disable-next-line no-case-declarations
-                            let person = data_begins['person']['properties'];
-                            result[k]['person'] = {};
-                            Object.keys(person).forEach(pk => {
-                                result[k]['person'][pk] = person[pk]['properties']
-                            });
-                            break;
-                        case 'relasjon':
-                            result[k] = data_begins['relasjoner']['properties'];
-                            break;
-                        case 'person':
-                        case 'dokument':
-                        case 'inst':
-                        case 'sam':
-                            result[k] = data_begins;
-                            break;
+            date_fields: function () {
+                return this.get_fields('date')
+            },
 
-                    }
-                });
-                return result;
+            all_fields: function () {
+                return {...this.text_fields(), ...this.date_fields()}
             },
 
             query_statement: function () {
                 let q = {
                     'bool': {
-                        'must': [
-
-                        ]
+                        'must': []
                     }
                 };
 
@@ -310,6 +291,119 @@
                         // eslint-disable-next-line no-console
                         console.log(reason)
                     })
+            },
+
+            extract_fields: function (person) {
+                let result = {};
+                Object.keys(person).forEach(pk => {
+                    if (pk === 'telefon') {
+                        result[pk] = {};
+                        Object.keys(person[pk]['properties']).forEach(tlf_k => {
+                            result[pk][tlf_k] = person[pk]['properties'][tlf_k]['properties']
+                        })
+                    } else {
+                        result[pk] = person[pk]['properties']
+                    }
+                });
+                return result;
+            },
+            remap_fields: function () {
+                let result = {};
+                Object.keys(this.data_model).forEach(k => {
+                    result[k] = {};
+                    let data_begins = this.data_model[k]['mappings']['_doc']['properties'];
+                    switch (k.toLowerCase()) {
+                        case 'skd':
+                            result[k]['dokument'] = data_begins['dokument']['properties'];
+                            result[k]['relasjon'] = data_begins['relasjon']['properties'];
+                            // eslint-disable-next-line no-case-declarations
+                            let person = data_begins['person']['properties'];
+                            result[k]['person'] = this.extract_fields(person);
+                            break;
+                        case 'relasjon':
+                            // result[k] = data_begins['relasjoner']['properties'];
+                            break;
+                        case 'person':
+                            break;
+                        case 'dokument':
+                            break;
+                        case 'inst':
+                        case 'sam':
+                            result[k] = data_begins;
+                            break;
+
+                    }
+                });
+                return result;
+            },
+            find_field: function (type, fields, k) {
+                let result = {};
+                if (k === 'skd') {
+                    Object.keys(fields[k]).forEach(skd_key => {
+                        result[skd_key] = [];
+                        if (skd_key === 'person') {
+                            Object.keys(fields[k][skd_key]).forEach(person_key => {
+                                if (person_key === 'telefon') {
+                                    Object.keys(fields[k][skd_key][person_key]).forEach(tlf_type_key => {
+                                            Object.keys(fields[k][skd_key][person_key][tlf_type_key]).forEach(tlf_values => {
+                                                if (fields[k][skd_key][person_key][tlf_type_key][tlf_values].hasOwnProperty('type') &&
+                                                    fields[k][skd_key][person_key][tlf_type_key][tlf_values]['type'] === type)
+                                                    result['person'].push({
+                                                        'name': person_key + '.' + tlf_type_key + '.' + tlf_values
+                                                    });
+                                            })
+                                        }
+                                    )
+                                } else {
+                                    if (fields[k][skd_key][person_key]) {
+                                        Object.keys(fields[k][skd_key][person_key]).forEach(person_value_key => {
+                                            if (fields[k][skd_key][person_key][person_value_key].hasOwnProperty('type')
+                                                && fields[k][skd_key][person_key][person_value_key]['type'] === type) {
+                                                result['person'].push({
+                                                    'name': person_key + '.' + person_value_key
+                                                });
+                                            }
+                                        })
+                                    }
+                                }
+                            })
+                        } else {
+                            Object.keys(fields[k][skd_key]).forEach(skd_field_key => {
+                                if (fields[k][skd_key][skd_field_key].hasOwnProperty('type')
+                                    && fields[k][skd_key][skd_field_key]['type'] === type) {
+                                    result[skd_key].push({
+                                        'name': skd_field_key
+                                    });
+                                }
+                            })
+                        }
+                    })
+                } else {
+                    result[k] = [];
+                    Object.keys(fields[k]).forEach(key => {
+                        if (fields[k][key]['type'] === type) {
+                            result[k].push({
+                                'name': key
+                            })
+                        }
+                    })
+                }
+                return result;
+            },
+            get_fields: function (type) {
+                if (!this.data_model) {
+                    return {}
+                }
+                let result = {};
+                let fields = this.remap_fields();
+                Object.keys(fields).forEach(k => {
+                    if (k === 'person' || k === 'relasjon' || k === 'dokument') {
+                        return
+                    }
+                    result = {...result, ...this.find_field(type, fields, k)}
+                });
+
+                return result;
             }
         },
         watch: {

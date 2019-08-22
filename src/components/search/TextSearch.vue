@@ -8,8 +8,8 @@
                         <option :value="null">Please select a field or write the fully qualified field name in the input
                             to the right
                         </option>
-                        <optgroup :label="group.label" v-for="(group, index) in options" :key="index">
-                            <option v-for="(opt, i) in group.options" :value="opt.name" :key="i">{{opt.name}}</option>
+                        <optgroup :label="k" v-for="(k, index) in Object.keys(groups)" :key="index">
+                            <option v-for="(opt, i) in groups[k]" :value="k + '.' + opt.name" :key="i">{{opt.name}}</option>
                         </optgroup>
                     </b-form-select>
                 </b-col>
@@ -32,7 +32,7 @@
         props: {
             'query': Object,
             'index': String,
-            'options': Array,
+            'groups': Object,
         },
         methods: {
             is_option_group(possible_group) {
