@@ -36,7 +36,6 @@
                                     </b-col>
                                 </b-row>
                             </b-list-group-item>
-                            <!--                            <b-button type="submit" variant="success">Submit</b-button>-->
                             <b-dropdown class="float-right" right split @click="add_query"
                                         :text="'Add ' + active_query_type + ' query'" variant="primary">
                                 <b-dropdown-item @click="active_query_type = item"
@@ -57,7 +56,7 @@
                         <br>
                         <pre v-if="debug.show_query">{{JSON.stringify(query_statement, null, 4)}}</pre>
                         <pre v-else-if="debug.show_data_model">{{JSON.stringify(data_model, null, 4)}}</pre>
-                        <pre v-else-if="debug.show_field_output">{{JSON.stringify(text_fields, null, 4)}}</pre>
+                        <pre v-else-if="debug.show_field_output">{{JSON.stringify(all_fields, null, 4)}}</pre>
                     </div>
                 </b-col>
             </b-row>
@@ -82,10 +81,12 @@
         data() {
             return {
                 data_model: null,
+                result_size: 20,
+                result_from: 0,
                 debug: {
                     show_query: true,
                     show_data_model: false,
-                    show_field_output: true
+                    show_field_output: false
                 },
                 data: null,
                 form: {
@@ -108,22 +109,22 @@
                         return_type: 'Scored',
                         query_type_name: 'match_phrase_prefix'
                     },
-                    'Query string query': {
-                        description: 'Match multiple words to a field. Can be joined by operators AND and OR.',
-                        return_type: 'Scored',
-                        example: 'this AND that OR thus',
-                        query_type_name: 'query_string_query'
-                    },
-                    'Term': {
-                        description: 'Find documents which contain the exact term specified in the field specified.',
-                        return_type: 'Bool',
-                        query_type_name: 'term'
-                    },
-                    'Terms': {
-                        description: 'Find documents which contain any of the exact terms specified in the field specified.',
-                        return_type: 'Bool',
-                        query_type_name: 'terms'
-                    },
+                    // 'Query string query': {
+                    //     description: 'Match multiple words to a field. Can be joined by operators AND and OR.',
+                    //     return_type: 'Scored',
+                    //     example: 'this AND that OR thus',
+                    //     query_type_name: 'query_string_query'
+                    // },
+                    // 'Term': {
+                    //     description: 'Find documents which contain the exact term specified in the field specified.',
+                    //     return_type: 'Bool',
+                    //     query_type_name: 'term'
+                    // },
+                    // 'Terms': {
+                    //     description: 'Find documents which contain any of the exact terms specified in the field specified.',
+                    //     return_type: 'Bool',
+                    //     query_type_name: 'terms'
+                    // },
                     'Range': {
                         description: 'Find documents where the field specified contains values (dates, numbers, or strings) in the range specified',
                         return_type: 'Bool',
@@ -170,7 +171,16 @@
             },
 
             all_fields: function () {
-                return {...this.text_fields(), ...this.date_fields()}
+                let text = this.get_fields('text');
+                let date = this.get_fields('date');
+                let result = text;
+                Object.keys(text).forEach(k => {
+                    if (date.hasOwnProperty(k)) {
+                        result[k] = {...text[k], ...date[k]};
+                    }
+                });
+
+                return result
             },
 
             query_statement: function () {
@@ -188,7 +198,7 @@
                         [query_type]: {
                             [field_name]: content
                         }
-                    })
+                    });
                 });
 
                 return q
@@ -217,7 +227,7 @@
                         break;
                     case "terms":
                         content = [''];
-                        field_type = 'terms';
+                        // field_type = 'terms';
                         break;
                     case "range":
                         field_type = 'range';
@@ -260,7 +270,7 @@
             },
             make_query: function (query) {
                 this.current_error = null;
-                axios.post('http://34.95.110.244/api/v1/skd/_search', query,
+                axios.post('http://34.95.110.244/api/v1/skd/_search' + '?size=' + this.result_size + '&from=' + this.result_from, query,
                     {
                         auth: this.auth
                     })
@@ -271,7 +281,8 @@
                                 response: {
                                     status: 204
                                 }
-                            }
+                            };
+                            this.data = null
                         }
                     }).catch(error => {
                     // eslint-disable-next-line no-console
@@ -398,7 +409,7 @@
                 let fields = this.remap_fields();
                 Object.keys(fields).forEach(k => {
                     if (k === 'person' || k === 'relasjon' || k === 'dokument') {
-                        return
+                        return {}
                     }
                     result = {...result, ...this.find_field(type, fields, k)}
                 });

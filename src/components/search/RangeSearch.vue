@@ -1,25 +1,6 @@
 <template>
     <div @change="set_data" @input="set_data">
-
-        <b-form-group :label-for="'field' + index">
-            <b-row>
-                <b-col>
-                    <b-form-select :id="'data-select' + index" v-model="query.field_name">
-                        <option :value="null">Please select a field or write the fully qualified field name in the input
-                            to the right
-                        </option>
-                        <optgroup :label="k" v-for="(k, index) in Object.keys(groups)" :key="index">
-                            <option v-for="(opt, i) in groups[k]" :value="k + '.' + opt.name" :key="i">{{opt.name}}
-                            </option>
-                        </optgroup>
-                    </b-form-select>
-                </b-col>
-                <b-col>
-                    <b-form-input :id="'field' + index"
-                                  v-model="query.field_name"></b-form-input>
-                </b-col>
-            </b-row>
-        </b-form-group>
+        <FieldSelector :groups="groups" :index="index" :query="query" :field_name="query.field_name"></FieldSelector>
 
         <b-list-group>
             <b-list-group-item>
@@ -39,8 +20,10 @@
 
 <script>
 
+    import FieldSelector from "@/components/search/FieldSelector";
     export default {
         name: "RangeSearch",
+        components: {FieldSelector},
         props: {
             'query': Object,
             'index': String,

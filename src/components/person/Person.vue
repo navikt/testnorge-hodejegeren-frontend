@@ -82,7 +82,7 @@
                 if (adresse.trim() === "") {
                     adresse = "Ingen gyldig adresse"
                 }
-                return adresse + " " + a.boKommune
+                return adresse + " " + a.booffaHusnr
             },
             alder: function () {
                 return this.person.personInfo[0].personDatofodt

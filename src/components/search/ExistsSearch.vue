@@ -3,7 +3,7 @@
         <b-form-group :label-for="'value' + index">
             <b-row>
                 <b-col>
-                    <b-form-select :id="'data-select' + index" v-model="query.field_name">
+                    <b-form-select :id="'data-select' + index" v-model="query.content">
                         <option :value="null">Please select a field or write the fully qualified field name in the input
                             to the right
                         </option>
@@ -14,7 +14,7 @@
                 </b-col>
                 <b-col>
                     <b-form-input :id="'field' + index"
-                                  v-model="query.field_name"></b-form-input>
+                                  v-model="query.content"></b-form-input>
                 </b-col>
             </b-row>
         </b-form-group>

@@ -1,25 +1,6 @@
 <template>
     <div>
-        <b-form-group :description="query.description" :label="query.label"
-                      :label-for="'field' + index">
-            <b-row>
-                <b-col>
-                    <b-form-select :id="'data-select' + index" v-model="query.field_name['terms']">
-                        <option :value="null">Please select a field or write the fully qualified field name in the input
-                            to the right
-                        </option>
-                        <optgroup :label="k" v-for="(k, index) in Object.keys(groups)" :key="index">
-                            <option v-for="(opt, i) in groups[k]" :value="k + '.' + opt.name" :key="i">{{opt.name}}</option>
-                        </optgroup>
-                    </b-form-select>
-                </b-col>
-                <b-col>
-                    <b-form-input :id="'field' + index"
-                                  v-model="query.field_name"></b-form-input>
-                </b-col>
-            </b-row>
-        </b-form-group>
-
+        <FieldSelector :groups="groups" :index="index" :query="query"></FieldSelector>
         <b-list-group>
             <b-list-group-item v-for="(content, i) in query.content['terms']" :key="i.toString()">
                 <b-form-group>
@@ -38,11 +19,14 @@
 </template>
 
 <script>
+    import FieldSelector from "@/components/search/FieldSelector";
     export default {
         name: "TermsSearch",
+        components: {FieldSelector},
         props: {
             'query': Object,
-            'index': String
+            'index': String,
+            'groups': Object,
         },
         methods: {
             add_value_input: function () {
@@ -51,8 +35,8 @@
 
             remove_value_input: function () {
                 this.query.content.pop()
-            }
-        }
+            },
+        },
     }
 </script>
 
